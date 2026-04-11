@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wunschzettel for Anya 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ede3c9;
+    --bg-alt: #f5ecd5;
+    --text: #201a15;
+    --muted: #6e5a44;
+    --accent: #b8541a;
+    --accent-soft: #f0c98a;
+    --border: #201a15;
+    --ok: #3a6e3a;
+    --err: #a83232;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    font-size: 16px;
+    color: var(--text);
+    background: var(--bg);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    position: relative;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+    border: 2px solid var(--border);
+    background: var(--bg-alt);
+    padding: 20px 18px;
+    box-shadow: 2px 2px 0 0 var(--border);
+  }
+
+  header h1 {
+    font-family: 'Silkscreen', monospace;
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin: 0;
+    color: var(--text);
+    letter-spacing: 0;
+    line-height: 1.2;
+  }
+
+  /* name bar */
+  .name-bar {
+    background: var(--bg-alt);
+    border: 2px solid var(--border);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 2px 2px 0 0 var(--border);
+  }
+
+  .name-bar label {
+    font-size: 0.82rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .name-bar input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: transparent;
+    padding: 4px 0;
+    caret-color: var(--accent);
+  }
+  .name-bar input::placeholder { color: #b0a08a; }
+
+  /* status line */
+  #status {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+    min-height: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #status.err { color: var(--err); }
+  #status.ok { color: var(--ok); }
+
+  /* prominent loading overlay */
+  .loading-box {
+    text-align: center;
+    padding: 44px 20px;
+    border: 2px dashed var(--border);
+    background: var(--bg-alt);
+    margin: 16px 0;
+    box-shadow: 2px 2px 0 0 var(--border);
+  }
+  .loading-box .label {
+    font-family: 'Silkscreen', monospace;
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+  }
+  .loading-box .bar {
+    display: inline-block;
+    width: 220px;
+    height: 18px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  .loading-box .bar::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 40%;
+    background: var(--accent);
+    animation: loaderSlide 1.1s linear infinite;
+  }
+  @keyframes loaderSlide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(280px); }
+  }
+  .loading-box .dots::after {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    text-align: left;
+    animation: dots 1.3s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ""; }
+    25%  { content: "."; }
+    50%  { content: ".."; }
+    75%  { content: "..."; }
+    100% { content: ""; }
+  }
+
+  /* items list */
+  .items {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .item {
+    background: var(--bg-alt);
+    border: 2px solid var(--border);
+    padding: 16px 18px;
+    box-shadow: 2px 2px 0 0 var(--border);
+    position: relative;
+  }
+  .item.claimed-by-me {
+    background: #f9e6c8;
+  }
+  .item.editing {
+    background: #fff4d8;
+    box-shadow: 2px 2px 0 0 var(--accent);
+  }
+
+  .item-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .item-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .item-title {
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.35;
+  }
+  .item-price {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 10px;
+    border: 2px solid var(--border);
+    background: var(--accent-soft);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text);
+    box-shadow: 2px 2px 0 0 var(--border);
+  }
+  .item-link {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    word-break: break-all;
+  }
+  .item-link a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+  .item-link a:hover { color: var(--text); background: var(--accent-soft); }
+
+  .item-actions-head {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--muted);
+    padding: 2px 6px;
+    transition: background 0.1s, border-color 0.1s;
+    font-family: inherit;
+  }
+  .icon-btn:hover {
+    background: var(--bg);
+    border-color: var(--border);
+  }
+  .icon-btn:disabled,
+  .claim-btn:disabled,
+  .btn-ghost:disabled,
+  .btn-primary:disabled,
+  .add-item button:disabled,
+  .add-item input:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .add-item input:disabled {
+    background: #eee2c5;
+  }
+
+  .name-hint {
+    margin: -4px 0 14px;
+    min-height: 18px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* claim chips */
+  .claims {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 4px;
+  }
+  .chip {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    padding: 2px 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .chip.me {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--border);
+  }
+
+  /* main CTA */
+  .claim-btn {
+    margin-top: 12px;
+    background: var(--accent);
+    color: var(--bg-alt);
+    border: 2px solid var(--border);
+    padding: 8px 16px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 0 var(--border);
+    transition: transform 0.05s, box-shadow 0.05s;
+    letter-spacing: 0.2px;
+  }
+  .claim-btn:hover { background: #c96530; }
+  .claim-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 0 var(--border);
+  }
+  .claim-btn.unclaim {
+    background: var(--bg);
+    color: var(--text);
+  }
+  .claim-btn.unclaim:hover { background: var(--accent-soft); }
+
+  .added-by {
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  /* inline editing */
+  .edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .edit-fields input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    font-family: inherit;
+    font-size: 0.92rem;
+    outline: none;
+    color: var(--text);
+  }
+  .edit-fields input:focus {
+    background: #fff;
+    border-color: var(--accent);
+  }
+  .edit-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  .btn-ghost, .btn-primary {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 0 var(--border);
+    letter-spacing: 0.2px;
+  }
+  .btn-ghost:hover { background: var(--accent-soft); }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg-alt);
+  }
+  .btn-primary:hover { background: #c96530; }
+  .btn-ghost:active, .btn-primary:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 0 var(--border);
+  }
+
+  /* per-item history */
+  .item-history {
+    margin-top: 10px;
+    border-top: 1px dashed var(--border);
+    padding-top: 8px;
+  }
+  .item-history summary {
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--muted);
+    list-style: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .item-history summary::-webkit-details-marker { display: none; }
+  .item-history summary::before { content: "[+] "; }
+  .item-history[open] summary::before { content: "[-] "; }
+  .item-history ul {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .item-history li {
+    font-size: 0.76rem;
+    color: var(--muted);
+    padding: 4px 0;
+    border-bottom: 1px dotted #b0a08a;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .item-history li:last-child { border-bottom: none; }
+  .item-history .who { color: var(--accent); font-weight: 700; }
+  .item-history .when { font-size: 0.68rem; opacity: 0.7; }
+
+  /* add item form */
+  .add-item {
+    margin-top: 24px;
+    background: var(--bg-alt);
+    border: 2px dashed var(--border);
+    padding: 14px 16px;
+    box-shadow: 2px 2px 0 0 var(--border);
+  }
+  .add-item summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--text);
+    list-style: none;
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .add-item summary::-webkit-details-marker { display: none; }
+  .add-item summary::before { content: "[+] "; color: var(--accent); }
+  .add-item[open] summary::before { content: "[-] "; }
+
+  .add-item .fields {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .add-item input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    font-family: inherit;
+    font-size: 0.92rem;
+    outline: none;
+  }
+  .add-item input:focus { background: #fff; border-color: var(--accent); }
+  .add-item button {
+    align-self: flex-start;
+    background: var(--accent);
+    color: var(--bg-alt);
+    border: 2px solid var(--border);
+    padding: 7px 18px;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 0 var(--border);
+    letter-spacing: 0.2px;
+  }
+  .add-item button:hover { background: #c96530; }
+  .add-item button:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 0 var(--border);
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 36px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'Silkscreen', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 500px) {
+    header h1 { font-size: 1.1rem; }
+    .wrap { padding: 20px 12px 60px; }
+    .loading-box .bar { width: 160px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>WUNSCHZETTEL · ANYA 2026</h1>
+  </header>
+
+  <div class="name-bar">
+    <label for="nameInput">&gt; name:</label>
+    <input id="nameInput" type="text" placeholder="hello, stranger_" maxlength="40" />
+  </div>
+  <div id="nameHint" class="name-hint"></div>
+
+  <div id="status"></div>
+
+  <div id="items" class="items">
+    <div class="loading-box">
+      <div class="label">LOADING<span class="dots"></span></div>
+      <div class="bar"></div>
+    </div>
+  </div>
+
+  <details class="add-item">
+    <summary>ADD GIFT</summary>
+    <div class="fields">
+      <input id="newTitle" type="text" placeholder="назва подарунка" maxlength="200" />
+      <input id="newPrice" type="text" placeholder="ціна / бюджет (опціонально)" maxlength="60" />
+      <input id="newUrl" type="url" placeholder="посилання (опціонально)" maxlength="500" />
+      <button id="addBtn">+ ADD</button>
+    </div>
+  </details>
+
+  <footer>MADE WITH &lt;3 · 2026</footer>
+</div>
+
+<script>
+  const BIN_ID = '69da862236566621a8a1a639';
+  const MASTER_KEY = '$2a$10$do9xTUs2EJsMiyE9k/VVf.nbQ8ujPf5aZ.2KWbWL6dl64OugRomuq';
+  const BASE = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+  const HEADERS = {
+    'Content-Type': 'application/json',
+    'X-Master-Key': MASTER_KEY,
+  };
+
+  let state = { items: [], claims: {} };
+  let editingItemId = null;
+  let initialLoadDone = false;
+  let userId = localStorage.getItem('wl_user_id');
+  if (!userId) {
+    userId = 'u' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('wl_user_id', userId);
+  }
+  let userName = localStorage.getItem('wl_user_name') || '';
+
+  const $ = (id) => document.getElementById(id);
+  const nameInput = $('nameInput');
+  const nameHintEl = $('nameHint');
+  const itemsEl = $('items');
+  const statusEl = $('status');
+  const newTitleEl = $('newTitle');
+  const newPriceEl = $('newPrice');
+  const newUrlEl = $('newUrl');
+  const addBtnEl = $('addBtn');
+
+  function hasName() {
+    return Boolean(userName);
+  }
+
+  function syncReadOnlyState() {
+    const readOnly = !hasName();
+    nameHintEl.textContent = readOnly
+      ? '> enter your name to join, edit, delete, or add gifts'
+      : '';
+    newTitleEl.disabled = readOnly;
+    newPriceEl.disabled = readOnly;
+    newUrlEl.disabled = readOnly;
+    addBtnEl.disabled = readOnly;
+  }
+
+  nameInput.value = userName;
+  nameInput.addEventListener('input', () => {
+    userName = nameInput.value.trim();
+    localStorage.setItem('wl_user_name', userName);
+    if (!userName) editingItemId = null;
+    syncReadOnlyState();
+    if (initialLoadDone) render();
+  });
+  syncReadOnlyState();
+
+  function setStatus(msg, cls = '') {
+    statusEl.textContent = msg;
+    statusEl.className = cls;
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  function shortId() {
+    return 'i' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function shortenText(text, max = 52) {
+    if (text.length <= max) return text;
+    return text.slice(0, max - 1) + '…';
+  }
+
+  function formatLinkLabel(url) {
+    try {
+      const parsed = new URL(url);
+      const label = (parsed.host + parsed.pathname + parsed.search).replace(/\/$/, '');
+      return shortenText(label || parsed.host);
+    } catch {
+      return shortenText(url);
+    }
+  }
+
+  function formatWhen(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' }) +
+             ' ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  }
+
+  function appendHistory(item, text) {
+    item.history ||= [];
+    item.history.unshift({
+      at: new Date().toISOString(),
+      who: userName || 'Anon',
+      text,
+    });
+    item.history = item.history.slice(0, 50);
+  }
+
+  async function load() {
+    if (editingItemId) return;
+    try {
+      const r = await fetch(BASE + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const json = await r.json();
+      const record = json.record || {};
+      state = {
+        items: (record.items || []).map((i) => ({
+          ...i,
+          price: i.price || '',
+          history: i.history || [],
+        })),
+        claims: record.claims || {},
+      };
+      initialLoadDone = true;
+      render();
+      setStatus('');
+    } catch (e) {
+      console.error(e);
+      setStatus('❌ не вдалось завантажити: ' + e.message, 'err');
+    }
+  }
+
+  async function save(optimisticState) {
+    const prev = state;
+    state = optimisticState;
+    render();
+    setStatus('> saving...', 'ok');
+    try {
+      const r = await fetch(BASE, {
+        method: 'PUT',
+        headers: HEADERS,
+        body: JSON.stringify(state),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      setStatus('> ok', 'ok');
+      setTimeout(() => setStatus(''), 1200);
+    } catch (e) {
+      console.error(e);
+      state = prev;
+      render();
+      setStatus('❌ помилка: ' + e.message, 'err');
+    }
+  }
+
+  function requireName() {
+    if (!userName) {
+      setStatus('⚠️ спершу введи ім\'я вгорі', 'err');
+      nameInput.focus();
+      return false;
+    }
+    return true;
+  }
+
+  function isClaimedByMe(itemId) {
+    const list = state.claims[itemId] || [];
+    return list.some((c) => c.userId === userId);
+  }
+
+  async function toggleClaim(itemId) {
+    if (!requireName()) return;
+    const next = JSON.parse(JSON.stringify(state));
+    const item = next.items.find((i) => i.id === itemId);
+    if (!item) return;
+    const list = next.claims[itemId] || [];
+    const mine = list.findIndex((c) => c.userId === userId);
+    if (mine >= 0) {
+      list.splice(mine, 1);
+      appendHistory(item, 'відмовив(-ла)ся 🚫');
+    } else {
+      list.push({ userId, name: userName, at: new Date().toISOString() });
+      appendHistory(item, 'бере участь 🎁');
+    }
+    next.claims[itemId] = list;
+    await save(next);
+  }
+
+  async function deleteItem(itemId) {
+    if (!requireName()) return;
+    const item = state.items.find((i) => i.id === itemId);
+    if (!item) return;
+    const claimCount = (state.claims[itemId] || []).length;
+    const warn = claimCount > 0
+      ? `\n\n⚠️ вже обрали ${claimCount} людин(а/и).`
+      : '';
+    if (!confirm(`Видалити «${item.title}»?${warn}`)) return;
+    const next = JSON.parse(JSON.stringify(state));
+    next.items = next.items.filter((i) => i.id !== itemId);
+    delete next.claims[itemId];
+    await save(next);
+  }
+
+  function editItem(itemId) {
+    if (!requireName()) return;
+    editingItemId = itemId;
+    render();
+    const input = document.querySelector(`[data-edit-title="${itemId}"]`);
+    if (input) { input.focus(); input.select(); }
+  }
+
+  async function copyItemTitle(itemId) {
+    const item = state.items.find((i) => i.id === itemId);
+    if (!item) return;
+    try {
+      await navigator.clipboard.writeText(item.title);
+    } catch {
+      const input = document.createElement('input');
+      input.value = item.title;
+      document.body.appendChild(input);
+      input.select();
+      try {
+        document.execCommand('copy');
+      } catch (e) {
+        console.error(e);
+        setStatus('❌ не вдалось скопіювати', 'err');
+        input.remove();
+        return;
+      }
+      input.remove();
+    }
+    setStatus('> copied', 'ok');
+    setTimeout(() => setStatus(''), 1200);
+  }
+
+  function cancelEdit() {
+    editingItemId = null;
+    setStatus('');
+    render();
+  }
+
+  async function saveEdit(itemId) {
+    const titleEl = document.querySelector(`[data-edit-title="${itemId}"]`);
+    const priceEl = document.querySelector(`[data-edit-price="${itemId}"]`);
+    const urlEl = document.querySelector(`[data-edit-url="${itemId}"]`);
+    if (!titleEl || !priceEl || !urlEl) return;
+    const newTitle = titleEl.value.trim();
+    const newPrice = priceEl.value.trim();
+    const newUrl = urlEl.value.trim();
+    if (!newTitle) {
+      setStatus('⚠️ назва не може бути пустою', 'err');
+      titleEl.focus();
+      return;
+    }
+    const current = state.items.find((i) => i.id === itemId);
+    if (!current) { editingItemId = null; render(); return; }
+    const oldTitle = current.title;
+    const oldPrice = current.price || '';
+    const oldUrl = current.url || '';
+    if (oldTitle === newTitle && oldPrice === newPrice && oldUrl === newUrl) {
+      editingItemId = null;
+      render();
+      return;
+    }
+    const next = JSON.parse(JSON.stringify(state));
+    const target = next.items.find((i) => i.id === itemId);
+    target.title = newTitle;
+    target.price = newPrice;
+    target.url = newUrl;
+    let text = 'оновив(-ла) деталі';
+    if (oldTitle !== newTitle) {
+      text = `змінив(-ла) «${oldTitle}» → «${newTitle}»`;
+    } else if (oldPrice !== newPrice && oldUrl === newUrl) {
+      text = 'оновив(-ла) ціну';
+    } else if (oldUrl !== newUrl && oldPrice === newPrice) {
+      text = 'оновив(-ла) посилання';
+    }
+    appendHistory(target, text);
+    editingItemId = null;
+    await save(next);
+  }
+
+  async function addItem() {
+    if (!requireName()) return;
+    const title = newTitleEl.value.trim();
+    const price = newPriceEl.value.trim();
+    const url = newUrlEl.value.trim();
+    if (!title) {
+      setStatus('⚠️ введи назву', 'err');
+      return;
+    }
+    const next = JSON.parse(JSON.stringify(state));
+    const newItem = {
+      id: shortId(),
+      title,
+      price,
+      url,
+      addedBy: userName,
+      addedAt: new Date().toISOString(),
+      history: [],
+    };
+    appendHistory(newItem, 'створив(-ла) ✨');
+    next.items.push(newItem);
+    await save(next);
+    newTitleEl.value = '';
+    newPriceEl.value = '';
+    newUrlEl.value = '';
+  }
+
+  function renderHistoryList(item) {
+    const list = item.history || [];
+    if (!list.length) return '';
+    const entries = list.map((h) => `
+      <li>
+        <span class="who">${escapeHtml(h.who)}</span> ${escapeHtml(h.text)}
+        <div class="when">${escapeHtml(formatWhen(h.at))}</div>
+      </li>
+    `).join('');
+    return `
+      <details class="item-history">
+        <summary>HISTORY (${list.length})</summary>
+        <ul>${entries}</ul>
+      </details>
+    `;
+  }
+
+  function renderItem(item) {
+    const claims = state.claims[item.id] || [];
+    const mine = isClaimedByMe(item.id);
+    const readOnly = !hasName();
+    const disabledAttr = readOnly ? 'disabled aria-disabled="true"' : '';
+    const chipsHtml = claims.map((c) => {
+      const cls = c.userId === userId ? 'chip me' : 'chip';
+      return `<span class="${cls}">${escapeHtml(c.name || 'Anon')}</span>`;
+    }).join('');
+    const claimBtn = `
+      <button class="claim-btn ${mine ? 'unclaim' : ''}" data-claim="${item.id}" ${disabledAttr}>
+        ${mine ? '↩ decline' : '🎁 join in'}
+      </button>
+    `;
+    const priceHtml = item.price ? `<div class="item-price">PRICE: ${escapeHtml(item.price)}</div>` : '';
+    const linkHtml = item.url
+      ? `<div class="item-link">&gt; link: <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${escapeHtml(formatLinkLabel(item.url))}</a></div>`
+      : '';
+    const addedBy = item.addedBy ? `<div class="added-by">&gt; added by ${escapeHtml(item.addedBy)}</div>` : '';
+    const historyHtml = renderHistoryList(item);
+
+    if (editingItemId === item.id) {
+      return `
+        <div class="item editing">
+          <div class="edit-fields">
+            <input type="text" data-edit-title="${item.id}" value="${escapeHtml(item.title)}" maxlength="200" placeholder="назва подарунка" />
+            <input type="text" data-edit-price="${item.id}" value="${escapeHtml(item.price || '')}" maxlength="60" placeholder="ціна / бюджет (опціонально)" />
+            <input type="url" data-edit-url="${item.id}" value="${escapeHtml(item.url || '')}" maxlength="500" placeholder="посилання (опціонально)" />
+          </div>
+          <div class="edit-actions">
+            <button class="btn-ghost" data-cancel="${item.id}">Cancel</button>
+            <button class="btn-primary" data-save="${item.id}">✓ Save</button>
+          </div>
+          <div class="claims">${chipsHtml}</div>
+          ${claimBtn}
+          ${priceHtml}
+          ${linkHtml}
+          ${addedBy}
+          ${historyHtml}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="item ${mine ? 'claimed-by-me' : ''}">
+        <div class="item-head">
+          <div class="item-main">
+            <div class="item-title">${escapeHtml(item.title)}</div>
+            <button class="icon-btn" title="Copy name" data-copy="${item.id}">[⧉]</button>
+          </div>
+          <div class="item-actions-head">
+            <button class="icon-btn" title="Edit" data-edit="${item.id}" ${disabledAttr}>[edit]</button>
+            <button class="icon-btn" title="Delete" data-del="${item.id}" ${disabledAttr}>[x]</button>
+          </div>
+        </div>
+        ${priceHtml}
+        ${linkHtml}
+        <div class="claims">${chipsHtml}</div>
+        ${claimBtn}
+        ${addedBy}
+        ${historyHtml}
+      </div>
+    `;
+  }
+
+  function render() {
+    if (!initialLoadDone) return;
+    if (!state.items.length) {
+      itemsEl.innerHTML = '<div class="loading-box"><div class="label">EMPTY LIST</div><div style="color:var(--muted);font-size:0.8rem;margin-top:6px;">&gt; add first gift below</div></div>';
+    } else {
+      itemsEl.innerHTML = state.items.map(renderItem).join('');
+    }
+  }
+
+  itemsEl.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.copy) copyItemTitle(t.dataset.copy);
+    else if (t.dataset.claim) toggleClaim(t.dataset.claim);
+    else if (t.dataset.del) deleteItem(t.dataset.del);
+    else if (t.dataset.edit) editItem(t.dataset.edit);
+    else if (t.dataset.save) saveEdit(t.dataset.save);
+    else if (t.dataset.cancel) cancelEdit();
+  });
+
+  itemsEl.addEventListener('keydown', (e) => {
+    if (!editingItemId) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+    } else if (e.key === 'Enter' && e.target.matches('input[data-edit-title], input[data-edit-price], input[data-edit-url]')) {
+      e.preventDefault();
+      saveEdit(editingItemId);
+    }
+  });
+
+  addBtnEl.addEventListener('click', addItem);
+
+  load();
+  setInterval(load, 30000);
+</script>
+</body>
+</html>
