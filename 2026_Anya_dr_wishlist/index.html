@@ -216,6 +216,13 @@
     font-size: 0.78rem;
     word-break: break-all;
   }
+  .item-note {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #b0a08a;
+    font-size: 0.84rem;
+    white-space: pre-wrap;
+  }
   .item-link a {
     color: var(--accent);
     text-decoration: underline;
@@ -249,12 +256,14 @@
   .btn-ghost:disabled,
   .btn-primary:disabled,
   .add-item button:disabled,
-  .add-item input:disabled {
+  .add-item input:disabled,
+  .add-item textarea:disabled {
     opacity: 0.45;
     cursor: not-allowed;
     box-shadow: none;
   }
-  .add-item input:disabled {
+  .add-item input:disabled,
+  .add-item textarea:disabled {
     background: #eee2c5;
   }
 
@@ -338,7 +347,20 @@
     outline: none;
     color: var(--text);
   }
-  .edit-fields input:focus {
+  .edit-fields textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    font-family: inherit;
+    font-size: 0.92rem;
+    outline: none;
+    color: var(--text);
+    resize: vertical;
+    min-height: 78px;
+  }
+  .edit-fields input:focus,
+  .edit-fields textarea:focus {
     background: #fff;
     border-color: var(--accent);
   }
@@ -441,7 +463,19 @@
     font-size: 0.92rem;
     outline: none;
   }
-  .add-item input:focus { background: #fff; border-color: var(--accent); }
+  .add-item textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    font-family: inherit;
+    font-size: 0.92rem;
+    outline: none;
+    resize: vertical;
+    min-height: 90px;
+  }
+  .add-item input:focus,
+  .add-item textarea:focus { background: #fff; border-color: var(--accent); }
   .add-item button {
     align-self: flex-start;
     background: var(--accent);
@@ -503,6 +537,7 @@
       <input id="newTitle" type="text" placeholder="назва подарунка" maxlength="200" />
       <input id="newPrice" type="text" placeholder="ціна / бюджет (опціонально)" maxlength="60" />
       <input id="newUrl" type="url" placeholder="посилання (опціонально)" maxlength="500" />
+      <textarea id="newNote" placeholder="нотатка / деталі (опціонально)" maxlength="400"></textarea>
       <button id="addBtn">+ ADD</button>
     </div>
   </details>
@@ -537,6 +572,7 @@
   const newTitleEl = $('newTitle');
   const newPriceEl = $('newPrice');
   const newUrlEl = $('newUrl');
+  const newNoteEl = $('newNote');
   const addBtnEl = $('addBtn');
 
   function hasName() {
@@ -551,6 +587,7 @@
     newTitleEl.disabled = readOnly;
     newPriceEl.disabled = readOnly;
     newUrlEl.disabled = readOnly;
+    newNoteEl.disabled = readOnly;
     addBtnEl.disabled = readOnly;
   }
 
@@ -623,6 +660,7 @@
         items: (record.items || []).map((i) => ({
           ...i,
           price: i.price || '',
+          note: i.note || '',
           history: i.history || [],
         })),
         claims: record.claims || {},
@@ -747,10 +785,12 @@
     const titleEl = document.querySelector(`[data-edit-title="${itemId}"]`);
     const priceEl = document.querySelector(`[data-edit-price="${itemId}"]`);
     const urlEl = document.querySelector(`[data-edit-url="${itemId}"]`);
-    if (!titleEl || !priceEl || !urlEl) return;
+    const noteEl = document.querySelector(`[data-edit-note="${itemId}"]`);
+    if (!titleEl || !priceEl || !urlEl || !noteEl) return;
     const newTitle = titleEl.value.trim();
     const newPrice = priceEl.value.trim();
     const newUrl = urlEl.value.trim();
+    const newNote = noteEl.value.trim();
     if (!newTitle) {
       setStatus('⚠️ назва не може бути пустою', 'err');
       titleEl.focus();
@@ -761,7 +801,8 @@
     const oldTitle = current.title;
     const oldPrice = current.price || '';
     const oldUrl = current.url || '';
-    if (oldTitle === newTitle && oldPrice === newPrice && oldUrl === newUrl) {
+    const oldNote = current.note || '';
+    if (oldTitle === newTitle && oldPrice === newPrice && oldUrl === newUrl && oldNote === newNote) {
       editingItemId = null;
       render();
       return;
@@ -771,13 +812,16 @@
     target.title = newTitle;
     target.price = newPrice;
     target.url = newUrl;
+    target.note = newNote;
     let text = 'оновив(-ла) деталі';
     if (oldTitle !== newTitle) {
       text = `змінив(-ла) «${oldTitle}» → «${newTitle}»`;
-    } else if (oldPrice !== newPrice && oldUrl === newUrl) {
+    } else if (oldPrice !== newPrice && oldUrl === newUrl && oldNote === newNote) {
       text = 'оновив(-ла) ціну';
-    } else if (oldUrl !== newUrl && oldPrice === newPrice) {
+    } else if (oldUrl !== newUrl && oldPrice === newPrice && oldNote === newNote) {
       text = 'оновив(-ла) посилання';
+    } else if (oldNote !== newNote && oldPrice === newPrice && oldUrl === newUrl) {
+      text = 'оновив(-ла) нотатку';
     }
     appendHistory(target, text);
     editingItemId = null;
@@ -789,6 +833,7 @@
     const title = newTitleEl.value.trim();
     const price = newPriceEl.value.trim();
     const url = newUrlEl.value.trim();
+    const note = newNoteEl.value.trim();
     if (!title) {
       setStatus('⚠️ введи назву', 'err');
       return;
@@ -799,6 +844,7 @@
       title,
       price,
       url,
+      note,
       addedBy: userName,
       addedAt: new Date().toISOString(),
       history: [],
@@ -809,6 +855,7 @@
     newTitleEl.value = '';
     newPriceEl.value = '';
     newUrlEl.value = '';
+    newNoteEl.value = '';
   }
 
   function renderHistoryList(item) {
@@ -846,6 +893,7 @@
     const linkHtml = item.url
       ? `<div class="item-link">&gt; link: <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${escapeHtml(formatLinkLabel(item.url))}</a></div>`
       : '';
+    const noteHtml = item.note ? `<div class="item-note">${escapeHtml(item.note)}</div>` : '';
     const addedBy = item.addedBy ? `<div class="added-by">&gt; added by ${escapeHtml(item.addedBy)}</div>` : '';
     const historyHtml = renderHistoryList(item);
 
@@ -856,6 +904,7 @@
             <input type="text" data-edit-title="${item.id}" value="${escapeHtml(item.title)}" maxlength="200" placeholder="назва подарунка" />
             <input type="text" data-edit-price="${item.id}" value="${escapeHtml(item.price || '')}" maxlength="60" placeholder="ціна / бюджет (опціонально)" />
             <input type="url" data-edit-url="${item.id}" value="${escapeHtml(item.url || '')}" maxlength="500" placeholder="посилання (опціонально)" />
+            <textarea data-edit-note="${item.id}" maxlength="400" placeholder="нотатка / деталі (опціонально)">${escapeHtml(item.note || '')}</textarea>
           </div>
           <div class="edit-actions">
             <button class="btn-ghost" data-cancel="${item.id}">Cancel</button>
@@ -885,6 +934,7 @@
         </div>
         ${priceHtml}
         ${linkHtml}
+        ${noteHtml}
         <div class="claims">${chipsHtml}</div>
         ${claimBtn}
         ${addedBy}
