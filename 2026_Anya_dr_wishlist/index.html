@@ -14,7 +14,10 @@
     --text: #201a15;
     --muted: #6e5a44;
     --accent: #b8541a;
+    --title: #8f3b12;
     --accent-soft: #f0c98a;
+    --chip: #cfe4ff;
+    --chip-me: #2f67b2;
     --border: #201a15;
     --ok: #3a6e3a;
     --err: #a83232;
@@ -182,7 +185,7 @@
   .item-head {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
+    gap: 12px;
   }
   .item-main {
     flex: 1;
@@ -191,25 +194,45 @@
     align-items: flex-start;
     gap: 6px;
   }
+  .item-index {
+    flex-shrink: 0;
+    color: var(--muted);
+    font-weight: 700;
+  }
   .item-title {
     flex: 1;
     min-width: 0;
     font-weight: 700;
     font-size: 1rem;
-    color: var(--text);
+    color: var(--title);
     word-break: break-word;
     line-height: 1.35;
   }
-  .item-price {
-    display: inline-block;
+  .item-foot {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .item-bottom {
     margin-top: 10px;
-    padding: 4px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .item-price {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 7px 12px 6px;
+    background: #f0c98a;
     border: 2px solid var(--border);
-    background: var(--accent-soft);
-    font-size: 0.88rem;
+    font-size: 1.05rem;
     font-weight: 700;
-    color: var(--text);
-    box-shadow: 2px 2px 0 0 var(--border);
+    color: var(--accent);
+    white-space: nowrap;
   }
   .item-link {
     margin-top: 6px;
@@ -218,8 +241,6 @@
   }
   .item-note {
     margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #b0a08a;
     font-size: 0.84rem;
     white-space: pre-wrap;
   }
@@ -235,6 +256,8 @@
     display: flex;
     gap: 2px;
     flex-shrink: 0;
+    margin-left: auto;
+    justify-content: flex-end;
   }
 
   .icon-btn {
@@ -284,16 +307,16 @@
     min-height: 4px;
   }
   .chip {
-    background: var(--bg);
+    background: var(--chip);
     border: 1.5px solid var(--border);
     color: var(--text);
     padding: 2px 8px;
     font-size: 0.78rem;
-    font-weight: 500;
+    font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
   }
   .chip.me {
-    background: var(--accent);
+    background: var(--chip-me);
     color: var(--bg);
     border-color: var(--border);
   }
@@ -394,9 +417,11 @@
 
   /* per-item history */
   .item-history {
-    margin-top: 10px;
+    margin-top: 0;
     border-top: 1px dashed var(--border);
     padding-top: 8px;
+    flex: 1;
+    min-width: 180px;
   }
   .item-history summary {
     cursor: pointer;
@@ -751,14 +776,25 @@
     if (input) { input.focus(); input.select(); }
   }
 
-  async function copyItemTitle(itemId) {
+  function buildCopyText(itemId) {
     const item = state.items.find((i) => i.id === itemId);
-    if (!item) return;
+    if (!item) return '';
+    const index = state.items.findIndex((i) => i.id === itemId);
+    const parts = [`${index + 1}. ${item.title}`];
+    if (item.price) parts.push(`Price: ${item.price}`);
+    if (item.url) parts.push(`Link: ${item.url}`);
+    if (item.note) parts.push(`Note:\n${item.note}`);
+    return parts.join('\n');
+  }
+
+  async function copyItemDetails(itemId) {
+    const text = buildCopyText(itemId);
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(item.title);
+      await navigator.clipboard.writeText(text);
     } catch {
       const input = document.createElement('input');
-      input.value = item.title;
+      input.value = text;
       document.body.appendChild(input);
       input.select();
       try {
@@ -875,7 +911,7 @@
     `;
   }
 
-  function renderItem(item) {
+  function renderItem(item, index) {
     const claims = state.claims[item.id] || [];
     const mine = isClaimedByMe(item.id);
     const readOnly = !hasName();
@@ -889,7 +925,7 @@
         ${mine ? '↩ decline' : '🎁 join in'}
       </button>
     `;
-    const priceHtml = item.price ? `<div class="item-price">PRICE: ${escapeHtml(item.price)}</div>` : '';
+    const priceHtml = item.price ? `<div class="item-price">${escapeHtml(item.price)}</div>` : '';
     const linkHtml = item.url
       ? `<div class="item-link">&gt; link: <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${escapeHtml(formatLinkLabel(item.url))}</a></div>`
       : '';
@@ -924,21 +960,26 @@
       <div class="item ${mine ? 'claimed-by-me' : ''}">
         <div class="item-head">
           <div class="item-main">
+            <div class="item-index">${index + 1}.</div>
             <div class="item-title">${escapeHtml(item.title)}</div>
-            <button class="icon-btn" title="Copy name" data-copy="${item.id}">[⧉]</button>
           </div>
+          ${priceHtml}
+        </div>
+        ${linkHtml}
+        ${noteHtml}
+        <div class="claims">${chipsHtml}</div>
+        <div class="item-foot">
+          ${claimBtn}
+        </div>
+        ${addedBy}
+        <div class="item-bottom">
+          ${historyHtml}
           <div class="item-actions-head">
+            <button class="icon-btn" title="Copy gift details" data-copy="${item.id}">[copy]</button>
             <button class="icon-btn" title="Edit" data-edit="${item.id}" ${disabledAttr}>[edit]</button>
             <button class="icon-btn" title="Delete" data-del="${item.id}" ${disabledAttr}>[x]</button>
           </div>
         </div>
-        ${priceHtml}
-        ${linkHtml}
-        ${noteHtml}
-        <div class="claims">${chipsHtml}</div>
-        ${claimBtn}
-        ${addedBy}
-        ${historyHtml}
       </div>
     `;
   }
@@ -948,14 +989,14 @@
     if (!state.items.length) {
       itemsEl.innerHTML = '<div class="loading-box"><div class="label">EMPTY LIST</div><div style="color:var(--muted);font-size:0.8rem;margin-top:6px;">&gt; add first gift below</div></div>';
     } else {
-      itemsEl.innerHTML = state.items.map(renderItem).join('');
+      itemsEl.innerHTML = state.items.map((item, index) => renderItem(item, index)).join('');
     }
   }
 
   itemsEl.addEventListener('click', (e) => {
     const t = e.target.closest('button');
     if (!t) return;
-    if (t.dataset.copy) copyItemTitle(t.dataset.copy);
+    if (t.dataset.copy) copyItemDetails(t.dataset.copy);
     else if (t.dataset.claim) toggleClaim(t.dataset.claim);
     else if (t.dataset.del) deleteItem(t.dataset.del);
     else if (t.dataset.edit) editItem(t.dataset.edit);
