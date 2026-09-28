@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Well, Well, Well</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M7 12a9 9 0 0 1 18 0' fill='none' stroke='%23333' stroke-width='2.4'/%3E%3Cpath fill='%23b87a3d' d='M5.5 12h21l-2.7 15a2 2 0 0 1-2 1.7H10.2a2 2 0 0 1-2-1.7z'/%3E%3Cpath d='M6.6 17.2h18.8M7.6 23.2h16.8' stroke='%23333' stroke-width='1.8'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="importmap">
+      { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+    </script>
+  </head>
+  <body data-phase="menu">
+    <canvas id="scene" aria-label="Well, Well, Well: throw buckets into a well"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <header class="hud">
+      <div class="pill score-pill">
+        <span class="label">Score</span>
+        <strong id="score">0</strong>
+        <span class="combo" id="combo">×1 streak</span>
+      </div>
+
+      <div class="pill wind-pill">
+        <svg class="wind-arrow" id="windArrow" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2.5l6.5 8.5h-4.3v10.5H9.8V11H5.5z" />
+        </svg>
+        <div class="readout">
+          <span class="label">Wind</span>
+          <strong id="windText">Calm</strong>
+        </div>
+        <div class="divider"></div>
+        <div class="readout">
+          <span class="label">Well</span>
+          <strong id="distance">10 m</strong>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="pill buckets" id="buckets" aria-label="Buckets left"></div>
+        <button class="pill icon-button" id="muteButton" type="button" aria-label="Toggle sound (M)">
+          <svg class="sound-on" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9h4l5-4v14l-5-4H4z" />
+            <path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" />
+          </svg>
+          <svg class="sound-off" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9h4l5-4v14l-5-4H4z" />
+            <path class="wave" d="M16.5 9.5l5 5M21.5 9.5l-5 5" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div id="floaters" aria-hidden="true"></div>
+
+    <div class="power" id="power" aria-hidden="true">
+      <div class="power-track"><div class="power-fill" id="powerFill"></div></div>
+      <span id="powerText">0%</span>
+    </div>
+    <div class="walk" aria-label="Walk left or right">
+      <button class="pill walk-button" id="walkLeft" type="button" aria-label="Walk left (A or ←)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+      </button>
+      <button class="pill walk-button" id="walkRight" type="button" aria-label="Walk right (D or →)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+
+    <div class="hint" id="hint"><span class="hint-finger" aria-hidden="true"></span>Drag upward, release to throw</div>
+
+    <section class="screen" id="menu">
+      <div class="card">
+        <h1 class="title"><span>Well,</span><span>Well,</span><span>Well.</span></h1>
+        <p class="tagline">Throw buckets into a well. Don't ask why.</p>
+        <ul class="steps">
+          <li><b>Drag up</b> to throw, longer goes farther</li>
+          <li><b>A / D</b> or arrows to step sideways</li>
+          <li><b>10 buckets.</b> Mind the wind, it's rude</li>
+        </ul>
+        <button class="play" id="playButton" type="button">Start throwing</button>
+        <p class="best" id="menuBest"></p>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="gameover">
+      <div class="card">
+        <p class="eyebrow">Out of buckets</p>
+        <h2 class="title compact">Well, well, well…</h2>
+        <p class="final"><strong id="finalScore">0</strong><span>points</span></p>
+        <p class="tagline" id="finalLine"></p>
+        <p class="stats" id="finalStats"></p>
+        <p class="best" id="finalBest"></p>
+        <button class="play" id="againButton" type="button">Fetch more buckets</button>
+      </div>
+    </section>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
